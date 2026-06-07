@@ -1,0 +1,102 @@
+{
+  "bm25": {
+    "n": 500,
+    "recall@10": 0.444,
+    "mrr": 0.2875428571428572,
+    "latency_ms": {
+      "cold_p50": 2.0914999913657084,
+      "cold_p95": 4.573574999812991,
+      "warm_p50": 1.6098499909276143,
+      "warm_p95": 3.2770249919849435
+    },
+    "passes_latency_50ms": true,
+    "stratified": {
+      "length_threshold_words": 10.0,
+      "short": {
+        "n": 260,
+        "recall@10": 0.3923076923076923,
+        "mrr": 0.23690018315018316
+      },
+      "long": {
+        "n": 240,
+        "recall@10": 0.5,
+        "mrr": 0.34240575396825396
+      }
+    },
+    "search_config": {
+      "method": "default"
+    },
+    "ram_mb": {
+      "baseline": 507.3,
+      "after_load": 619.5,
+      "index_delta": 112.2
+    }
+  },
+  "dense": {
+    "n": 500,
+    "recall@10": 0.652,
+    "mrr": 0.469765873015873,
+    "latency_ms": {
+      "cold_p50": 6.317100007436238,
+      "cold_p95": 8.978064989787546,
+      "warm_p50": 6.249950005440041,
+      "warm_p95": 8.355904994823504
+    },
+    "passes_latency_50ms": true,
+    "stratified": {
+      "length_threshold_words": 10.0,
+      "short": {
+        "n": 260,
+        "recall@10": 0.5846153846153846,
+        "mrr": 0.4166941391941392
+      },
+      "long": {
+        "n": 240,
+        "recall@10": 0.725,
+        "mrr": 0.5272602513227513
+      }
+    },
+    "search_config": {
+      "method": "default"
+    },
+    "ram_mb": {
+      "baseline": 507.3,
+      "after_load": 835.0,
+      "index_delta": 327.7
+    }
+  },
+  "hybrid": {
+    "n": 500,
+    "recall@10": 0.658,
+    "mrr": 0.48426904761904754,
+    "latency_ms": {
+      "cold_p50": 10.385750007117167,
+      "cold_p95": 13.050710012612399,
+      "warm_p50": 10.280250004143454,
+      "warm_p95": 15.664910002669785
+    },
+    "passes_latency_50ms": true,
+    "stratified": {
+      "length_threshold_words": 10.0,
+      "short": {
+        "n": 260,
+        "recall@10": 0.5884615384615385,
+        "mrr": 0.4243070818070818
+      },
+      "long": {
+        "n": 240,
+        "recall@10": 0.7333333333333333,
+        "mrr": 0.5492278439153438
+      }
+    },
+    "search_config": {
+      "method": "linear",
+      "alpha": 0.3
+    },
+    "ram_mb": {
+      "baseline": 506.3,
+      "after_load": 883.8,
+      "index_delta": 377.5
+    }
+  }
+}
