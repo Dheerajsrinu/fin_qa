@@ -11,12 +11,14 @@ import config
 
 
 def build_retriever(method: str):
+    """Return (retriever, search_kwargs). Hybrid defaults to the chosen operating
+    point: linear fusion at alpha=0.3 (see DESIGN / results/ablation.md)."""
     if method == "bm25":
-        return BM25Retriever.load()
+        return BM25Retriever.load(), {}
     if method == "dense":
-        return DenseRetriever.load()
+        return DenseRetriever.load(), {}
     if method == "hybrid":
-        return HybridRetriever.load()
+        return HybridRetriever.load(), {"method": "linear", "alpha": 0.3}
     raise ValueError(f"Unknown method: {method}")
 
 
@@ -27,8 +29,8 @@ def main():
     parser.add_argument("--method", choices=["bm25", "dense", "hybrid"], default="hybrid")
     args = parser.parse_args()
 
-    retriever = build_retriever(args.method)
-    results = retriever.search(args.query, top_k=args.top_k)
+    retriever, search_kwargs = build_retriever(args.method)
+    results = retriever.search(args.query, top_k=args.top_k, **search_kwargs)
 
     for rank, (doc_id, score, text) in enumerate(results, 1):
         print(f"[{rank}] score={score:.4f}  id={doc_id}")

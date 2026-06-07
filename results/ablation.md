@@ -105,7 +105,7 @@ best — then quality falls off a cliff past α=0.5.
 
 > We also tried **RRF** fusion (rank-based, swept k ∈ {10,30,60,100}); it *hurt*
 > quality at every k (best R@10=0.634 < 0.652 dense alone), so linear interpolation
-> was kept. See `EXPERIMENT_LOG.md` §4 and `experiments/compare_hybrid_methods.py`.
+> was kept.
 
 **Decision.** Linear fusion at **α=0.3** is the chosen hybrid operating point.
 

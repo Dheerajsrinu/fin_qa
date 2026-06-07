@@ -115,13 +115,34 @@ def _quality(retriever, query_items, qrels, top_k, search_kwargs):
     }
 
 
-def _stratify_by_length(query_items):
-    """Split (qid, text) items into short/long by the median word count."""
-    lengths = [len(text.split()) for _, text in query_items]
-    threshold = float(np.median(lengths))
-    short = [it for it, n in zip(query_items, lengths) if n <= threshold]
-    long_ = [it for it, n in zip(query_items, lengths) if n > threshold]
-    return threshold, short, long_
+def _bucket_by_query_length(query_items):
+    """Bucket (qid, text) by token count: short <5, medium 5-15, long >15.
+    (Token count approximated by whitespace word count.)"""
+    buckets = {"short_lt5": [], "medium_5_15": [], "long_gt15": []}
+    for it in query_items:
+        n = len(it[1].split())
+        if n < 5:
+            buckets["short_lt5"].append(it)
+        elif n <= 15:
+            buckets["medium_5_15"].append(it)
+        else:
+            buckets["long_gt15"].append(it)
+    return buckets
+
+
+def _split_by_gold_doc_length(query_items, qrels, corpus):
+    """Split queries by whether their gold passage is among the top 10% longest
+    docs in the corpus. Tests whether the system is biased toward short/long docs."""
+    doc_len = {d: len((v.get("title", "") + " " + v.get("text", "")).split())
+               for d, v in corpus.items()}
+    threshold = float(np.percentile(list(doc_len.values()), 90))
+    long_docs = {d for d, n in doc_len.items() if n >= threshold}
+
+    gold_long, rest = [], []
+    for qid, text in query_items:
+        gold_ids = set(qrels.get(qid, {}).keys())
+        (gold_long if gold_ids & long_docs else rest).append((qid, text))
+    return threshold, gold_long, rest
 
 
 # ── full evaluation of one retriever ──────────────────────────────────────────
@@ -135,18 +156,33 @@ def evaluate(
     search_kwargs: dict | None = None,
 ) -> dict:
     search_kwargs = search_kwargs or {}
-    query_items = list(queries.items())
+    query_items = list(queries.items())                 # [(qid, text), ...]
     query_texts = [text for _, text in query_items]
 
+    # Measure latency FIRST, right after load. The quality sweep below runs
+    # ~1500 searches and saturates the CPU; measuring latency after it would
+    # capture thermal throttling rather than steady-state serving. Cold latency
+    # here is a genuine cold start; warm follows its own 100-query warmup.
     latency = measure_latency(retriever, query_texts, top_k, search_kwargs)
 
     overall = _quality(retriever, query_items, qrels, top_k, search_kwargs)
 
-    threshold, short, long_ = _stratify_by_length(query_items)
+    qlen_buckets = _bucket_by_query_length(query_items)
+    by_query_length = {
+        name: _quality(retriever, items, qrels, top_k, search_kwargs)
+        for name, items in qlen_buckets.items()
+    }
+
+    gold_thr, gold_long, rest = _split_by_gold_doc_length(query_items, qrels, corpus)
+    by_gold_doc_length = {
+        "long_doc_threshold_words": gold_thr,
+        "gold_in_top10pct_longest": _quality(retriever, gold_long, qrels, top_k, search_kwargs),
+        "rest":                     _quality(retriever, rest, qrels, top_k, search_kwargs),
+    }
+
     stratified = {
-        "length_threshold_words": threshold,
-        "short": _quality(retriever, short, qrels, top_k, search_kwargs),
-        "long":  _quality(retriever, long_, qrels, top_k, search_kwargs),
+        "by_query_length": by_query_length,
+        "by_gold_doc_length": by_gold_doc_length,
     }
 
     return {
@@ -156,6 +192,11 @@ def evaluate(
         "stratified": stratified,
         "search_config": search_kwargs or {"method": "default"},
     }
+
+
+# ── retriever registry ────────────────────────────────────────────────────────
+# Hybrid is evaluated at its chosen operating point: linear fusion, alpha=0.3
+# (best Recall@10 within the 50ms budget once ONNX encode is in place).
 
 def _load_retriever(name: str):
     if name == "bm25":
@@ -179,9 +220,9 @@ def _benchmark_one(name: str, queries: dict, qrels: dict, corpus: dict) -> dict:
 
     result = evaluate(retriever, queries, qrels, corpus, search_kwargs=search_kwargs)
     result["ram_mb"] = {
-        "baseline": round(base_rss, 1),
-        "after_load": round(after_rss, 1),
-        "index_delta": round(after_rss - base_rss, 1),
+        "baseline": round(base_rss, 1),            # interpreter + imports
+        "after_load": round(after_rss, 1),         # + index + model + corpus
+        "index_delta": round(after_rss - base_rss, 1),  # the index's own footprint
     }
     return result
 
@@ -205,6 +246,10 @@ def main():
                              "one's latency. Only used with --retriever all.")
     args = parser.parse_args()
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+
+    # "all" fans out to one subprocess per retriever so each is measured from a
+    # clean process: isolated RAM attribution and (with the cooldown) a cool CPU
+    # for latency. Each child writes its own fragment, which we merge here.
     if args.retriever == "all":
         import subprocess
         merged = {}
@@ -232,6 +277,7 @@ def main():
         print(f"Results written to {args.output}")
         return
 
+    # Single-retriever path (also what each subprocess runs).
     corpus, queries, qrels = GenericDataLoader(
         data_folder=str(config.DATA_DIR)
     ).load(split="dev")

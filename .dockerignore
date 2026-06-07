@@ -1,0 +1,12 @@
+.git
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Rejected-model index artifacts — not needed for `make eval` or the kept
+# ablation; excluding them keeps the image lean (~900 MB smaller).
+indexes/bge_base.faiss
+indexes/mpnet.faiss
+indexes/mpnet_onnx/

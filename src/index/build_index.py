@@ -49,6 +49,14 @@ def main():
         dense.save()
         print(f"Dense index saved -> {config.DENSE_INDEX_PATH}")
 
+        # Export the ONNX graph used at serve time. ONNX embeddings match the
+        # PyTorch ones the index was just built with (cos=1.0), so no rebuild
+        # mismatch — it's purely a faster CPU encode for queries.
+        if config.DENSE_BACKEND == "onnx":
+            from index.export_onnx import export
+            print("\nExporting bge-small to ONNX (serve-time encoder)...")
+            export("bge-small")
+
     print("\nDone.")
 
 
