@@ -28,14 +28,21 @@ class DenseRetriever:
         doc_ids_path: Path = config.DOC_IDS_PATH,
         corpus_path: Path = config.CORPUS_CACHE_PATH,
         model_name: str = config.DENSE_MODEL,
+        corpus: dict | None = None,
+        backend: str = config.DENSE_BACKEND,
     ) -> "DenseRetriever":
         index = faiss.read_index(str(index_path))
-        index.hnsw.efSearch = config.HNSW_EF_SEARCH   # quality/speed knob at serve time
+        index.hnsw.efSearch = config.HNSW_EF_SEARCH
         with open(doc_ids_path, "rb") as f:
             doc_ids = pickle.load(f)
-        with open(corpus_path, "rb") as f:
-            corpus = pickle.load(f)
-        model = SentenceTransformer(model_name)
+        if corpus is None:
+            with open(corpus_path, "rb") as f:
+                corpus = pickle.load(f)
+        if backend == "onnx":
+            from retrieval.onnx_encoder import OnnxEncoder
+            model = OnnxEncoder(config.ONNX_DENSE_DIR / "model.onnx")
+        else:
+            model = SentenceTransformer(model_name)
         return cls(index, doc_ids, corpus, model)
 
     def search(self, query: str, top_k: int = config.TOP_K) -> list[tuple[str, float, str]]:

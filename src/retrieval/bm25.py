@@ -18,11 +18,13 @@ class BM25Retriever:
         cls,
         index_path: Path = config.BM25_INDEX_PATH,
         corpus_path: Path = config.CORPUS_CACHE_PATH,
+        corpus: dict | None = None,
     ) -> "BM25Retriever":
         with open(index_path, "rb") as f:
             indexer = pickle.load(f)
-        with open(corpus_path, "rb") as f:
-            corpus = pickle.load(f)
+        if corpus is None:
+            with open(corpus_path, "rb") as f:
+                corpus = pickle.load(f)
         return cls(indexer, corpus)
 
     def search(self, query: str, top_k: int = config.TOP_K) -> list[tuple[str, float, str]]:

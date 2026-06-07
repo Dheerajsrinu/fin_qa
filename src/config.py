@@ -6,6 +6,8 @@ INDEX_DIR = ROOT / "indexes"
 RESULTS_DIR = ROOT / "results"
 
 DENSE_MODEL = "BAAI/bge-small-en-v1.5"
+DENSE_BACKEND = "onnx"
+ONNX_DENSE_DIR = INDEX_DIR / "bge_small_onnx"
 BM25_INDEX_PATH = INDEX_DIR / "bm25.pkl"
 DENSE_INDEX_PATH = INDEX_DIR / "bge_small.faiss"
 CORPUS_CACHE_PATH = INDEX_DIR / "corpus.pkl"
@@ -18,3 +20,4 @@ DENSE_BATCH_SIZE = 64
 HNSW_M = 16
 HNSW_EF_CONSTRUCTION = 200
 HNSW_EF_SEARCH = 50
+CANDIDATE_K    = 50
