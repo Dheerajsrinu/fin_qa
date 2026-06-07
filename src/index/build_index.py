@@ -17,7 +17,6 @@ def load_or_download_corpus() -> dict:
         url = "https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/fiqa.zip"
         util.download_and_unzip(url, str(config.DATA_DIR.parent))
     corpus, _, _ = GenericDataLoader(data_folder=str(config.DATA_DIR)).load(split="dev")
-    print(corpus)
     return corpus
 
 

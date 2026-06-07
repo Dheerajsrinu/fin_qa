@@ -7,7 +7,7 @@ RESULTS_DIR = ROOT / "results"
 
 DENSE_MODEL = "BAAI/bge-small-en-v1.5"
 BM25_INDEX_PATH = INDEX_DIR / "bm25.pkl"
-DENSE_INDEX_PATH = INDEX_DIR / "dense.faiss"
+DENSE_INDEX_PATH = INDEX_DIR / "bge_small.faiss"
 CORPUS_CACHE_PATH = INDEX_DIR / "corpus.pkl"
 DOC_IDS_PATH = INDEX_DIR / "doc_ids.pkl"
 
